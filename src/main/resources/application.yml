@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: ai-learning-platform
+
+server:
+  port: 8080
+
+# ---------------------------------------------------------------------------
+# Module 0 — where the model lives.
+# Point this at your local Ollama. Nothing here ever leaves your machine:
+# that is the whole reason we run inference locally (privacy / cost / control).
+# ---------------------------------------------------------------------------
+ollama:
+  base-url: http://localhost:11434
+  # qwen2.5-coder:7b is the daily driver. Swap to :14b for max quality,
+  # or llama3.2:3b for fast smoke tests.
+  model: qwen2.5-coder:7b
+  connect-timeout: 5s
+  # LLM calls are slow; give the read a generous budget.
+  read-timeout: 120s
+
+# ---------------------------------------------------------------------------
+# Module 1 — how we make extraction reliable & reproducible.
+# ---------------------------------------------------------------------------
+invoice:
+  extraction:
+    # Lets you route invoice extraction to a different (e.g. stronger) model
+    # than the default chat model without touching code.
+    model: ${ollama.model}
+    # temperature 0 => greedy decoding => as deterministic as the model gets.
+    # For *extraction* we never want creativity.
+    temperature: 0.0
+    # A fixed seed + temperature 0 makes runs reproducible (great for tests/debugging).
+    seed: 42
+    # Context window the model is allowed to use. Big invoices need headroom.
+    num-ctx: 8192
+    # "auto-retry once": 1 retry => up to 2 attempts total.
+    max-retries: 1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+logging:
+  level:
+    com.dileep.ailearning: INFO

@@ -1,0 +1,43 @@
+### Scratch file for the IntelliJ / VS Code REST client.
+### Start the app first:  ./mvnw spring-boot:run   (needs Ollama running locally)
+
+@host = http://localhost:8080
+
+### Health check (no model needed)
+GET {{host}}/actuator/health
+
+### --- Module 0: basic chat round-trip to the local model ---
+POST {{host}}/api/chat
+Content-Type: application/json
+
+{
+  "prompt": "In one sentence, what is an embedding?"
+}
+
+### Module 0: steer the model with a system message
+POST {{host}}/api/chat
+Content-Type: application/json
+
+{
+  "system": "You are a terse senior engineer. Answer in <= 20 words.",
+  "prompt": "When would you run an LLM locally instead of calling a hosted API?"
+}
+
+### --- Module 1: structured invoice extraction ---
+
+### List bundled samples
+GET {{host}}/api/invoices/samples
+
+### Extract a clean sample (zero setup)
+POST {{host}}/api/invoices/extract-sample/clean
+
+### Extract a sample with missing fields (watch the nulls)
+POST {{host}}/api/invoices/extract-sample/missing-fields
+
+### Extract your own invoice text
+POST {{host}}/api/invoices/extract
+Content-Type: application/json
+
+{
+  "text": "Invoice No: INV-77\nFrom: Foo Ltd  GSTIN: 27AABCF1111A1Z5\nWidget Pro  HSN 8471  Qty 2  Rate 1500.00  Amount 3000.00\nGST 18% 540.00\nTotal 3540.00\nCurrency INR"
+}

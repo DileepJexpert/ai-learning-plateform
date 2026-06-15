@@ -1,0 +1,16 @@
+INVOICE
+
+Billed By: Lakshmi Stationers
+Invoice #: LS-0934
+Dated: 03 June 2025
+
+(No GSTIN printed on this bill)
+
+Item                         Amount
+A4 Copier Paper (5 reams)     1450.00
+Whiteboard Markers (box)       320.00
+Sticky Notes assorted          180.00
+
+Total Payable                 1950.00
+
+Note: amounts are inclusive of tax; tax rate not itemised.

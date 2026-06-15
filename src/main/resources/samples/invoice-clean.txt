@@ -1,0 +1,25 @@
+TAX INVOICE
+
+Vendor: Sunrise Electricals Pvt Ltd
+GSTIN: 27AADCS9012F1Z7
+Address: Plot 14, MIDC, Pune 411019
+
+Invoice No: SE/2025/1187
+Invoice Date: 28/05/2025
+
+Bill To: Northwind Retail Ltd
+Buyer GSTIN: 29AAFCN3344K1Z9
+
+------------------------------------------------------------
+S.No  Description              HSN     Qty   Rate     Amount
+1     LED Panel 18W            9405    50    220.00   11000.00
+2     Modular Switch 6A        8536    200   45.00     9000.00
+3     PVC Conduit Pipe 25mm    3917    300   18.50     5550.00
+------------------------------------------------------------
+                              Subtotal              25550.00
+                              CGST 9%                2299.50
+                              SGST 9%                2299.50
+                              Grand Total           30149.00
+
+Currency: INR
+Payment Terms: Net 30
