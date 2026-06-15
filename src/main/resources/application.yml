@@ -1,6 +1,11 @@
 spring:
   application:
     name: ai-learning-platform
+  servlet:
+    multipart:
+      # Module 2: invoice photos from phones can be several MB. Give uploads headroom.
+      max-file-size: 15MB
+      max-request-size: 20MB
 
 server:
   port: 8080
@@ -27,6 +32,9 @@ invoice:
     # Lets you route invoice extraction to a different (e.g. stronger) model
     # than the default chat model without touching code.
     model: ${ollama.model}
+    # Module 2: the multimodal model used for image/photo extraction.
+    # Must accept images. Pull it first:  ollama pull llama3.2-vision
+    vision-model: llama3.2-vision
     # temperature 0 => greedy decoding => as deterministic as the model gets.
     # For *extraction* we never want creativity.
     temperature: 0.0

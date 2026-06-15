@@ -95,6 +95,20 @@ public class InvoicePromptFactory {
     }
 
     /**
+     * Module 2: the data half when the invoice arrives as an image instead of text.
+     * The same schema contract (system prompt) applies — only the input modality
+     * changes. We reinforce the "don't guess unreadable values" rule because photos
+     * can be blurry, skewed, or partially cropped.
+     */
+    public String visionUserPrompt() {
+        return """
+                Extract the invoice shown in the attached image into the JSON schema.
+                Read every visible line item, top to bottom. If the image is blurry or a
+                value is unreadable, use null for that field — do not guess.
+                """;
+    }
+
+    /**
      * Correction nudge used on retry. We hand the model its own bad output plus the
      * concrete reason it failed, and ask only for a corrected object. Telling it
      * *why* it failed is far more effective than blindly re-asking.

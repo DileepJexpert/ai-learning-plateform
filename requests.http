@@ -41,3 +41,16 @@ Content-Type: application/json
 {
   "text": "Invoice No: INV-77\nFrom: Foo Ltd  GSTIN: 27AABCF1111A1Z5\nWidget Pro  HSN 8471  Qty 2  Rate 1500.00  Amount 3000.00\nGST 18% 540.00\nTotal 3540.00\nCurrency INR"
 }
+
+### --- Module 2: extract from an invoice photo/scan ---
+### Needs a vision model:  ollama pull llama3.2-vision
+### Point the `<` at any real invoice image on disk (JPEG/PNG).
+POST {{host}}/api/invoices/extract-image
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="invoice.jpg"
+Content-Type: image/jpeg
+
+< ./invoice.jpg
+--WebAppBoundary--

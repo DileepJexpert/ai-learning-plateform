@@ -9,8 +9,9 @@ This repo follows a module-by-module learning plan. What's built **right now**:
 |--------|-------|--------|
 | **0** | Baseline — call a local model over HTTP | ✅ built |
 | **1** | Prompt engineering & **structured output** (hardened invoice extractor) | ✅ built |
-| 2 | Vision / multimodal extraction | ⏳ next |
-| 3–8 | Embeddings, RAG, tools/agents, eval, production, system design | 🗺️ planned |
+| **2** | **Vision / multimodal extraction** (invoice photo → same schema) | ✅ built |
+| 3 | Embeddings & semantic search (pgvector) | ⏳ next |
+| 4–8 | RAG, tools/agents, eval, production, system design | 🗺️ planned |
 
 > **The headline feature:** an invoice → JSON extractor that returns **valid,
 > schema-correct JSON every time** — strict schema + few-shot + null handling +
@@ -26,6 +27,7 @@ This repo follows a module-by-module learning plan. What's built **right now**:
    ```bash
    ollama serve                 # starts the server on http://localhost:11434
    ollama pull qwen2.5-coder:7b # the default model used here
+   ollama pull llama3.2-vision  # Module 2: reading invoice photos/scans
    # optional alternates:
    ollama pull qwen2.5-coder:14b   # max quality
    ollama pull llama3.2:3b         # fast smoke tests
@@ -63,6 +65,9 @@ curl -s -X POST localhost:8080/api/invoices/extract-sample/missing-fields | jq
 curl -s localhost:8080/api/invoices/extract \
   -H 'Content-Type: application/json' \
   -d '{"text":"Invoice No: INV-9\nFrom: Foo Ltd  GSTIN: 27AABCF1111A1Z5\nWidget x2  Rate 50.00  Amount 100.00\nGST 18% 18.00\nTotal 118.00\nCurrency INR"}' | jq
+
+# Module 2 — extract from a photo/scan (needs: ollama pull llama3.2-vision)
+curl -s -F file=@/path/to/invoice.jpg localhost:8080/api/invoices/extract-image | jq
 ```
 
 `requests.http` has the same calls for the IntelliJ/VS Code REST client.
@@ -136,6 +141,11 @@ raw text ──> [system prompt + few-shot] ──> Ollama (format:json, temp 0)
                                           ExtractionResult   └─► 422 (rejected)
 ```
 
+> **Module 2 (vision) reuses every box above.** An invoice *photo* enters as a
+> base64-image message to a vision model (`llama3.2-vision`); from "parse JSON"
+> onward the pipeline — schema, validation, auto-retry, reject — is identical.
+> See [`docs/module-2-vision.md`](docs/module-2-vision.md).
+
 ---
 
 ## Project layout
@@ -148,16 +158,17 @@ src/main/java/com/dileep/ailearning/
 │  ├─ OllamaClient.java              #   thin wrapper over POST /api/chat (logs token usage)
 │  └─ dto/                           #   the wire format (ChatRequest/Response, Message, Options)
 ├─ chat/ChatController.java          # MODULE 0: POST /api/chat demo endpoint
-├─ invoice/                          # MODULE 1: structured extraction
+├─ invoice/                          # MODULE 1 & 2: structured extraction
 │  ├─ InvoicePromptFactory.java      #   the schema + few-shot contract  ← the "feature"
-│  ├─ InvoiceExtractionService.java  #   parse + validate + auto-retry loop
-│  ├─ InvoiceController.java         #   POST /api/invoices/extract[-sample]
+│  ├─ InvoiceExtractionService.java  #   extract(text) + extractFromImage(bytes), shared retry loop
+│  ├─ InvoiceController.java         #   POST /api/invoices/extract[-sample] (text) + /extract-image (photo)
 │  └─ model/{Invoice,LineItem}.java  #   target schema + validation guardrails
 └─ common/                           # JsonSanitizer, GlobalExceptionHandler (RFC-7807)
 ```
 
 `docs/` has a one-page concept note per module ([Module 0](docs/module-0-baseline.md),
-[Module 1](docs/module-1-structured-output.md)) — written as interview prep.
+[Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md)) —
+written as interview prep.
 
 ---
 
@@ -169,7 +180,8 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 |-----|---------|---------|
 | `ollama.base-url` | `http://localhost:11434` | where Ollama listens |
 | `ollama.model` | `qwen2.5-coder:7b` | default chat model |
-| `invoice.extraction.model` | `qwen2.5-coder:7b` | model for extraction (escalate to `:14b` for hard docs) |
+| `invoice.extraction.model` | `qwen2.5-coder:7b` | text model for extraction (escalate to `:14b` for hard docs) |
+| `invoice.extraction.vision-model` | `llama3.2-vision` | multimodal model for image/photo extraction (Module 2) |
 | `invoice.extraction.temperature` | `0.0` | 0 = deterministic; never raise for extraction |
 | `invoice.extraction.seed` | `42` | fixed seed → reproducible runs |
 | `invoice.extraction.max-retries` | `1` | "auto-retry once" |
@@ -187,13 +199,16 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
   schema-enforced JSON output, few-shot prompting, and auto-retry on invalid output."*
 - *"Added a Bean-Validation guardrail that rejects malformed model output before
   persistence, returning RFC-7807 problem responses."*
+- *"Extended it to multimodal input — base64 image → vision model — reusing the
+  same schema-validated domain object and retry pipeline as the text path."*
 
 See the per-module docs for the concepts and the questions they answer.
 
 ---
 
-## Next up — Module 2 (Vision)
+## Next up — Module 3 (Embeddings & semantic search)
 
-`ollama pull llama3.2-vision`, send a base64 invoice **photo**, reuse the exact
-same `Invoice` schema and validation/retry pipeline. The extraction service is
-already model- and input-agnostic, so most of this plugs straight in.
+`ollama pull nomic-embed-text`, embed chunks of your own docs (BRD/FRD, GST
+notes), store the vectors in **pgvector**, and implement cosine-similarity
+search — the foundation for Module 4 (RAG). This is the first module that adds a
+datastore (Postgres + the `pgvector` extension) alongside Ollama.

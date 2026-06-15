@@ -48,7 +48,7 @@ class InvoiceExtractionServiceTest {
         ollama = mock(OllamaClient.class);
         ObjectMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        var config = new InvoiceExtractionProperties("test-model", 0.0, 42, 8192, 1);
+        var config = new InvoiceExtractionProperties("test-model", "test-vision-model", 0.0, 42, 8192, 1);
         service = new InvoiceExtractionService(ollama, objectMapper, validator,
                 new InvoicePromptFactory(), config);
     }
