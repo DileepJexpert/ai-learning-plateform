@@ -13,8 +13,9 @@ This repo follows a module-by-module learning plan. What's built **right now**:
 | **3** | **Embeddings & semantic search** (pgvector + nomic-embed-text) | ✅ built |
 | **4** | **RAG** ⭐ (retrieve → MMR re-rank → grounded answer + citations) | ✅ built |
 | **5** | **Tool calling / agents** (ReAct loop, validation + retry) | ✅ built |
-| 6 | Evaluation & guardrails | ⏳ next |
-| 7–8 | Production concerns, system design | 🗺️ planned |
+| **6** | **Evaluation & guardrails** (eval set, LLM-judge, injection/PII) | ✅ built |
+| 7 | Production concerns (streaming, caching, fallbacks) | ⏳ next |
+| 8 | Architecture & system design | 🗺️ planned |
 
 > **The headline feature:** an invoice → JSON extractor that returns **valid,
 > schema-correct JSON every time** — strict schema + few-shot + null handling +
@@ -212,13 +213,24 @@ src/main/java/com/dileep/ailearning/
 │  ├─ tools/{ErpDataStore,GetCustomer,QueryLedger}  #   sample tools over in-memory ERP data
 │  ├─ AgentResult.java               #   final answer + full tool-call trace
 │  └─ AgentController.java           #   POST /api/agent/ask, GET /api/agent/tools
+├─ eval/                             # MODULE 6: evaluation
+│  ├─ InvoiceEvaluator.java          #   field accuracy + line-item precision/recall/F1
+│  ├─ EvaluationService.java         #   run the labelled set, aggregate metrics
+│  ├─ LlmJudge.java                  #   LLM-as-judge for fuzzy (free-text) outputs
+│  └─ EvalController.java            #   POST /api/eval/{invoices,judge}
+├─ guardrail/                        # MODULE 6: guardrails (reject/clean bad data)
+│  ├─ InvoiceGuardrail.java          #   allow-lists + GSTIN format + arithmetic sanity
+│  ├─ PromptInjectionGuard.java      #   detect injection signals + delimit untrusted text
+│  ├─ PiiRedactor.java               #   mask email/phone/PAN/Aadhaar/GSTIN/card
+│  └─ GuardrailController.java       #   POST /api/guardrail/{check-invoice,scan-injection,redact-pii}
 └─ common/                           # JsonSanitizer, GlobalExceptionHandler (RFC-7807)
 ```
 
 `docs/` has a one-page concept note per module ([Module 0](docs/module-0-baseline.md),
 [Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md),
 [Module 3](docs/module-3-embeddings.md), [Module 4](docs/module-4-rag.md),
-[Module 5](docs/module-5-tools.md)) — written as interview prep.
+[Module 5](docs/module-5-tools.md), [Module 6](docs/module-6-eval-guardrails.md)) —
+written as interview prep.
 
 ---
 
@@ -247,6 +259,9 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 | `agent.model` | `qwen2.5-coder:7b` | tool-capable chat model (Module 5) |
 | `agent.max-iterations` | `5` | safety cap on the agentic loop |
 | `agent.temperature` | `0.0` | deterministic tool selection |
+| `eval.judge-model` | `qwen2.5-coder:7b` | model used as LLM-judge (Module 6) |
+| `eval.judge-pass-score` | `4` | min 1–5 judge score to count as a pass |
+| `eval.min-accuracy` | `0.8` | field-accuracy threshold for gating an eval run |
 
 ```bash
 # e.g. use the bigger model just for extraction:
@@ -272,14 +287,17 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 - *"Built a tool-calling agent with a ReAct execution loop, an auto-discovered
   tool registry, and validation that feeds malformed tool calls back to the model
   for self-correction (plus an iteration cap and full call trace)."*
+- *"Added an automated eval harness (field accuracy + line-item F1, per-field
+  metrics, LLM-as-judge) and a guardrail layer — business-rule validation, prompt-
+  injection detection, and PII redaction — for regulated-environment safety."*
 
 See the per-module docs for the concepts and the questions they answer.
 
 ---
 
-## Next up — Module 6 (Evaluation & guardrails)
+## Next up — Module 7 (Production concerns)
 
-Build a small labelled test set (invoices with known-correct answers), measure
-extraction accuracy automatically, and add a guardrail layer that rejects bad
-output before it reaches the DB — plus prompt-injection defence and PII handling.
-This is where the "how do you *know* it works?" interview answer comes from.
+Add the things that make an LLM feature production-grade: streaming responses
+(SSE), response caching (exact + semantic), timeouts, a fallback path, and
+per-request token/latency logging. This is where a Kafka/SRE/reliability
+background outclasses pure-ML candidates.

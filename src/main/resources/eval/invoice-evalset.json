@@ -1,0 +1,60 @@
+[
+  {
+    "name": "clean-two-line",
+    "text": "TAX INVOICE\nVendor: Acme Components Pvt Ltd  GSTIN: 27AABCA1234A1Z5\nInvoice No: INV-2025-0042  Date: 12/03/2025\nBill To: Bharat Motors Ltd  GSTIN: 29AAFCB5678B1Z3\nM6 Hex Bolt  HSN 7318  Qty 1000  Rate 2.50  Amount 2500.00\nSteel Washer 6mm  HSN 7318  Qty 1000  Rate 0.40  Amount 400.00\nSubtotal 2900.00  GST 18% 522.00  Total 3422.00  Currency INR",
+    "expected": {
+      "invoiceNumber": "INV-2025-0042",
+      "invoiceDate": "12/03/2025",
+      "vendorName": "Acme Components Pvt Ltd",
+      "vendorGstin": "27AABCA1234A1Z5",
+      "buyerName": "Bharat Motors Ltd",
+      "buyerGstin": "29AAFCB5678B1Z3",
+      "currency": "INR",
+      "lineItems": [
+        {"description": "M6 Hex Bolt", "hsnCode": "7318", "quantity": 1000, "unitPrice": 2.50, "taxRate": 18, "lineTotal": 2500.00},
+        {"description": "Steel Washer 6mm", "hsnCode": "7318", "quantity": 1000, "unitPrice": 0.40, "taxRate": 18, "lineTotal": 400.00}
+      ],
+      "subtotal": 2900.00,
+      "taxAmount": 522.00,
+      "totalAmount": 3422.00
+    }
+  },
+  {
+    "name": "missing-fields",
+    "text": "Invoice #: 7781\nDate: 2025-04-01\nFrom: Gupta Traders\nConsulting services - April 2025   45000.00\nTotal Due 45000.00",
+    "expected": {
+      "invoiceNumber": "7781",
+      "invoiceDate": "2025-04-01",
+      "vendorName": "Gupta Traders",
+      "vendorGstin": null,
+      "buyerName": null,
+      "buyerGstin": null,
+      "currency": null,
+      "lineItems": [
+        {"description": "Consulting services - April 2025", "hsnCode": null, "quantity": null, "unitPrice": null, "taxRate": null, "lineTotal": 45000.00}
+      ],
+      "subtotal": null,
+      "taxAmount": null,
+      "totalAmount": 45000.00
+    }
+  },
+  {
+    "name": "single-item-usd",
+    "text": "INVOICE\nGlobex LLC\nInvoice Number: GLX-9\nDate: 2025-02-15\nWidget Pro x2 @ 1500.00 = 3000.00\nTax 0.00\nTotal 3000.00  Currency USD",
+    "expected": {
+      "invoiceNumber": "GLX-9",
+      "invoiceDate": "2025-02-15",
+      "vendorName": "Globex LLC",
+      "vendorGstin": null,
+      "buyerName": null,
+      "buyerGstin": null,
+      "currency": "USD",
+      "lineItems": [
+        {"description": "Widget Pro", "hsnCode": null, "quantity": 2, "unitPrice": 1500.00, "taxRate": null, "lineTotal": 3000.00}
+      ],
+      "subtotal": 3000.00,
+      "taxAmount": 0.00,
+      "totalAmount": 3000.00
+    }
+  }
+]
