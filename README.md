@@ -11,8 +11,9 @@ This repo follows a module-by-module learning plan. What's built **right now**:
 | **1** | Prompt engineering & **structured output** (hardened invoice extractor) | ✅ built |
 | **2** | **Vision / multimodal extraction** (invoice photo → same schema) | ✅ built |
 | **3** | **Embeddings & semantic search** (pgvector + nomic-embed-text) | ✅ built |
-| 4 | RAG (retrieval-augmented generation) | ⏳ next |
-| 5–8 | Tools/agents, eval, production, system design | 🗺️ planned |
+| **4** | **RAG** ⭐ (retrieve → MMR re-rank → grounded answer + citations) | ✅ built |
+| 5 | Tool calling / function calling / agents | ⏳ next |
+| 6–8 | Eval & guardrails, production, system design | 🗺️ planned |
 
 > **The headline feature:** an invoice → JSON extractor that returns **valid,
 > schema-correct JSON every time** — strict schema + few-shot + null handling +
@@ -87,6 +88,11 @@ curl -s localhost:8080/api/embeddings/ingest \
 curl -s localhost:8080/api/embeddings/search \
   -H 'Content-Type: application/json' \
   -d '{"query":"What is the GST rate for electronic goods?","k":3}' | jq
+
+# Module 4 — RAG: grounded answer with citations (ingest some docs first)
+curl -s localhost:8080/api/rag/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"What is the GST rate for electronic goods?"}' | jq
 ```
 
 `requests.http` has the same calls for the IntelliJ/VS Code REST client.
@@ -184,16 +190,23 @@ src/main/java/com/dileep/ailearning/
 │  └─ model/{Invoice,LineItem}.java  #   target schema + validation guardrails
 ├─ embedding/                        # MODULE 3: embeddings & vector storage
 │  ├─ TextChunker.java               #   split documents into overlapping chunks
-│  ├─ EmbeddingService.java          #   chunk → embed (via Ollama) → store in pgvector
-│  ├─ ChunkRepository.java           #   pgvector SQL: insert + cosine-similarity search
+│  ├─ EmbeddingService.java          #   chunk → embed (via Ollama) → store; retrieve() for RAG
+│  ├─ ChunkRepository.java           #   pgvector SQL: insert + cosine search (+ candidates w/ vectors)
 │  └─ DocumentChunk.java             #   stored chunk record
 ├─ search/SemanticSearchController   # MODULE 3: POST /api/embeddings/{ingest,search}
+├─ rag/                              # MODULE 4: retrieval-augmented generation
+│  ├─ RagService.java                #   retrieve → MMR re-rank → budget → ground → generate
+│  ├─ Mmr.java                       #   MMR re-ranker (relevance + diversity, no extra model)
+│  ├─ RagPromptFactory.java          #   the grounding contract (answer only from context, cite, refuse)
+│  ├─ RagAnswer.java                 #   answer + citations + metadata
+│  └─ RagController.java             #   POST /api/rag/ask
 └─ common/                           # JsonSanitizer, GlobalExceptionHandler (RFC-7807)
 ```
 
 `docs/` has a one-page concept note per module ([Module 0](docs/module-0-baseline.md),
 [Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md),
-[Module 3](docs/module-3-embeddings.md)) — written as interview prep.
+[Module 3](docs/module-3-embeddings.md), [Module 4](docs/module-4-rag.md)) —
+written as interview prep.
 
 ---
 
@@ -214,6 +227,11 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 | `embedding.dimensions` | `768` | must match the model's output dimension |
 | `embedding.chunk-size` | `500` | target chunk size in characters |
 | `embedding.chunk-overlap` | `100` | overlap between consecutive chunks |
+| `rag.top-k` | `4` | chunks stuffed into the prompt after re-ranking (Module 4) |
+| `rag.fetch-k` | `20` | candidate pool retrieved before re-ranking |
+| `rag.rerank` / `rag.mmr-lambda` | `true` / `0.6` | MMR re-ranking on/off and relevance↔diversity balance |
+| `rag.max-context-chars` | `6000` | context-window budget for stuffed chunks |
+| `rag.temperature` | `0.1` | low = faithful to context |
 
 ```bash
 # e.g. use the bigger model just for extraction:
@@ -233,15 +251,17 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 - *"Implemented semantic search over internal docs using local embeddings
   (nomic-embed-text) stored in pgvector with HNSW indexing and cosine-similarity
   retrieval."*
+- *"Built an offline RAG pipeline (Ollama + pgvector) with MMR re-ranking,
+  context-window budgeting, and grounded generation that cites its sources and
+  refuses when the answer isn't in the corpus."*
 
 See the per-module docs for the concepts and the questions they answer.
 
 ---
 
-## Next up — Module 4 (RAG)
+## Next up — Module 5 (Tool calling / agents)
 
-The most-asked applied-AI interview topic. Build the full pipeline:
-retrieve relevant chunks from pgvector (Module 3), stuff them into a prompt
-as grounding context, and have the chat model answer **with citations**.
-Everything needed (embedding + storage + search + chat model) is already
-wired — Module 4 ties them together.
+Give the LLM tools — e.g. `getCustomer(id)`, `queryLedger(account)` — and let it
+decide which to call. Execute the call in Spring Boot, feed the result back, and
+loop until the model produces a final answer (the agentic loop / ReAct pattern),
+with validation + retry for malformed tool calls.

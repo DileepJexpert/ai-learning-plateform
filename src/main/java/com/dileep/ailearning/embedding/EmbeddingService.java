@@ -91,6 +91,17 @@ public class EmbeddingService {
         return chunkRepo.searchSimilar(queryVector, k);
     }
 
+    /**
+     * Retrieve the top-{@code k} candidate chunks for a query, <b>with</b> their
+     * embeddings — used by RAG (Module 4) to fetch a candidate pool for re-ranking.
+     */
+    public List<ChunkRepository.Candidate> retrieve(String query, int k) {
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("query must not be blank");
+        }
+        return chunkRepo.searchCandidates(embed(query), k);
+    }
+
     /** Embed a single text string using the configured embedding model. */
     private float[] embed(String text) {
         EmbedResponse response = ollama.embed(new EmbedRequest(config.model(), text));

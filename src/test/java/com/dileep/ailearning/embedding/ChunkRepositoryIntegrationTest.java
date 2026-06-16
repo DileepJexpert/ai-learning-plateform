@@ -73,6 +73,21 @@ class ChunkRepositoryIntegrationTest {
         assertThat(hits).isEmpty();
     }
 
+    @Test
+    void searchCandidatesRoundTripsTheEmbedding() {
+        // The candidate query reads the vector column BACK from Postgres — verify it
+        // parses into a correct float[] (this is what MMR re-ranking depends on).
+        float[] vec = unitVector(768, 3);
+        repo.save(DocumentChunk.of("doc-1", 0, "hello", vec));
+
+        List<ChunkRepository.Candidate> candidates = repo.searchCandidates(vec, 1);
+
+        assertThat(candidates).hasSize(1);
+        assertThat(candidates.get(0).embedding()).hasSize(768);
+        assertThat(candidates.get(0).embedding()[3]).isEqualTo(1.0f);
+        assertThat(candidates.get(0).similarity()).isCloseTo(1.0, org.assertj.core.api.Assertions.within(1e-5));
+    }
+
     /** Creates a unit vector with 1.0 at the given index and 0.0 elsewhere. */
     private static float[] unitVector(int dims, int hotIndex) {
         float[] vec = new float[dims];

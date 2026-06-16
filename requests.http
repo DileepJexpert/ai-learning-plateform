@@ -63,6 +63,23 @@ Content-Type: application/json
   "k": 3
 }
 
+### --- Module 4: RAG (grounded answer with citations) ---
+### Ingest some documents first (above), then ask:
+POST {{host}}/api/rag/ask
+Content-Type: application/json
+
+{
+  "question": "What is the GST rate for electronic goods?"
+}
+
+### A question the docs can't answer → expect "I don't know based on the provided documents."
+POST {{host}}/api/rag/ask
+Content-Type: application/json
+
+{
+  "question": "What is the capital of France?"
+}
+
 ### --- Module 2: extract from an invoice photo/scan ---
 ### Needs a vision model:  ollama pull llama3.2-vision
 ### Point the `<` at any real invoice image on disk (JPEG/PNG).

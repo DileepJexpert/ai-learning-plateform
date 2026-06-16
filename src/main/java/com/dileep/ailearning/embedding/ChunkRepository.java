@@ -68,6 +68,26 @@ public class ChunkRepository {
                 .list();
     }
 
+    /**
+     * Like {@link #searchSimilar} but also returns each chunk's embedding vector,
+     * so a re-ranker (e.g. MMR, Module 4) can compute chunk-to-chunk similarity.
+     * Used to fetch a larger candidate pool that is then re-ranked down to top-k.
+     */
+    public List<Candidate> searchCandidates(float[] queryEmbedding, int k) {
+        return jdbc.sql("""
+                SELECT id, doc_name, chunk_index, content, embedding,
+                       1 - (embedding <=> ?::vector) AS similarity
+                FROM document_chunks
+                ORDER BY embedding <=> ?::vector
+                LIMIT ?
+                """)
+                .param(new PGvector(queryEmbedding).toString())
+                .param(new PGvector(queryEmbedding).toString())
+                .param(k)
+                .query(this::mapCandidate)
+                .list();
+    }
+
     /** Delete all chunks for a given document (e.g. before re-ingesting). */
     public int deleteByDocName(String docName) {
         return jdbc.sql("DELETE FROM document_chunks WHERE doc_name = ?")
@@ -91,11 +111,28 @@ public class ChunkRepository {
                 rs.getDouble("similarity"));
     }
 
+    private Candidate mapCandidate(ResultSet rs, int rowNum) throws SQLException {
+        // The vector column comes back as a string like "[0.1,0.2,...]"; parse it via PGvector.
+        float[] embedding = new PGvector(rs.getString("embedding")).toArray();
+        return new Candidate(
+                rs.getLong("id"),
+                rs.getString("doc_name"),
+                rs.getInt("chunk_index"),
+                rs.getString("content"),
+                rs.getDouble("similarity"),
+                embedding);
+    }
+
     /**
      * A chunk that matched a similarity search, with its cosine-similarity score.
      *
      * @param similarity 1.0 = identical, 0.0 = orthogonal (no relation)
      */
     public record SearchHit(long id, String docName, int chunkIndex, String content, double similarity) {
+    }
+
+    /** A search hit plus its embedding vector — input to re-ranking (Module 4). */
+    public record Candidate(long id, String docName, int chunkIndex, String content,
+                            double similarity, float[] embedding) {
     }
 }

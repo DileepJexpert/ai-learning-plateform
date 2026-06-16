@@ -71,6 +71,28 @@ embedding:
   # Overlap keeps context at chunk boundaries.
   chunk-overlap: 100
 
+# ---------------------------------------------------------------------------
+# Module 4 — RAG (retrieval-augmented generation).
+# ---------------------------------------------------------------------------
+rag:
+  # Chat model that writes the grounded answer.
+  chat-model: ${ollama.model}
+  # Low temperature: we want faithful answers from the context, not creativity.
+  temperature: 0.1
+  seed: 42
+  # Big context window — RAG stuffs several chunks plus the question.
+  num-ctx: 8192
+  # How many chunks end up in the prompt (after re-ranking).
+  top-k: 4
+  # Larger candidate pool retrieved before re-ranking (over-fetch).
+  fetch-k: 20
+  # MMR re-ranking for relevance + diversity (set false to take top-k by similarity).
+  rerank: true
+  # MMR balance: 1.0 = pure relevance, 0.0 = pure diversity.
+  mmr-lambda: 0.6
+  # Context budget in characters (~4 chars/token). Keeps us inside the window.
+  max-context-chars: 6000
+
 management:
   endpoints:
     web:
