@@ -12,8 +12,9 @@ This repo follows a module-by-module learning plan. What's built **right now**:
 | **2** | **Vision / multimodal extraction** (invoice photo → same schema) | ✅ built |
 | **3** | **Embeddings & semantic search** (pgvector + nomic-embed-text) | ✅ built |
 | **4** | **RAG** ⭐ (retrieve → MMR re-rank → grounded answer + citations) | ✅ built |
-| 5 | Tool calling / function calling / agents | ⏳ next |
-| 6–8 | Eval & guardrails, production, system design | 🗺️ planned |
+| **5** | **Tool calling / agents** (ReAct loop, validation + retry) | ✅ built |
+| 6 | Evaluation & guardrails | ⏳ next |
+| 7–8 | Production concerns, system design | 🗺️ planned |
 
 > **The headline feature:** an invoice → JSON extractor that returns **valid,
 > schema-correct JSON every time** — strict schema + few-shot + null handling +
@@ -93,6 +94,11 @@ curl -s localhost:8080/api/embeddings/search \
 curl -s localhost:8080/api/rag/ask \
   -H 'Content-Type: application/json' \
   -d '{"question":"What is the GST rate for electronic goods?"}' | jq
+
+# Module 5 — tool-calling agent (calls get_customer / query_ledger and reasons over results)
+curl -s localhost:8080/api/agent/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"What does customer C-100 owe, and how close are they to their credit limit?"}' | jq
 ```
 
 `requests.http` has the same calls for the IntelliJ/VS Code REST client.
@@ -200,13 +206,19 @@ src/main/java/com/dileep/ailearning/
 │  ├─ RagPromptFactory.java          #   the grounding contract (answer only from context, cite, refuse)
 │  ├─ RagAnswer.java                 #   answer + citations + metadata
 │  └─ RagController.java             #   POST /api/rag/ask
+├─ agent/                            # MODULE 5: tool calling / agentic loop
+│  ├─ AgentService.java              #   ReAct loop: advertise tools → execute → feed back → repeat
+│  ├─ Tool.java + ToolRegistry.java  #   tool interface + auto-discovery of all Tool beans
+│  ├─ tools/{ErpDataStore,GetCustomer,QueryLedger}  #   sample tools over in-memory ERP data
+│  ├─ AgentResult.java               #   final answer + full tool-call trace
+│  └─ AgentController.java           #   POST /api/agent/ask, GET /api/agent/tools
 └─ common/                           # JsonSanitizer, GlobalExceptionHandler (RFC-7807)
 ```
 
 `docs/` has a one-page concept note per module ([Module 0](docs/module-0-baseline.md),
 [Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md),
-[Module 3](docs/module-3-embeddings.md), [Module 4](docs/module-4-rag.md)) —
-written as interview prep.
+[Module 3](docs/module-3-embeddings.md), [Module 4](docs/module-4-rag.md),
+[Module 5](docs/module-5-tools.md)) — written as interview prep.
 
 ---
 
@@ -232,6 +244,9 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 | `rag.rerank` / `rag.mmr-lambda` | `true` / `0.6` | MMR re-ranking on/off and relevance↔diversity balance |
 | `rag.max-context-chars` | `6000` | context-window budget for stuffed chunks |
 | `rag.temperature` | `0.1` | low = faithful to context |
+| `agent.model` | `qwen2.5-coder:7b` | tool-capable chat model (Module 5) |
+| `agent.max-iterations` | `5` | safety cap on the agentic loop |
+| `agent.temperature` | `0.0` | deterministic tool selection |
 
 ```bash
 # e.g. use the bigger model just for extraction:
@@ -254,14 +269,17 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 - *"Built an offline RAG pipeline (Ollama + pgvector) with MMR re-ranking,
   context-window budgeting, and grounded generation that cites its sources and
   refuses when the answer isn't in the corpus."*
+- *"Built a tool-calling agent with a ReAct execution loop, an auto-discovered
+  tool registry, and validation that feeds malformed tool calls back to the model
+  for self-correction (plus an iteration cap and full call trace)."*
 
 See the per-module docs for the concepts and the questions they answer.
 
 ---
 
-## Next up — Module 5 (Tool calling / agents)
+## Next up — Module 6 (Evaluation & guardrails)
 
-Give the LLM tools — e.g. `getCustomer(id)`, `queryLedger(account)` — and let it
-decide which to call. Execute the call in Spring Boot, feed the result back, and
-loop until the model produces a final answer (the agentic loop / ReAct pattern),
-with validation + retry for malformed tool calls.
+Build a small labelled test set (invoices with known-correct answers), measure
+extraction accuracy automatically, and add a guardrail layer that rejects bad
+output before it reaches the DB — plus prompt-injection defence and PII handling.
+This is where the "how do you *know* it works?" interview answer comes from.

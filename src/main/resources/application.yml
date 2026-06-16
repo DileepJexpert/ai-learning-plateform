@@ -93,6 +93,19 @@ rag:
   # Context budget in characters (~4 chars/token). Keeps us inside the window.
   max-context-chars: 6000
 
+# ---------------------------------------------------------------------------
+# Module 5 — tool-calling agent.
+# Needs a tool-capable model (Qwen2.5, Llama 3.1+). qwen2.5-coder:7b works well.
+# ---------------------------------------------------------------------------
+agent:
+  model: ${ollama.model}
+  # Deterministic tool selection — we don't want creativity when picking tools.
+  temperature: 0.0
+  seed: 42
+  num-ctx: 8192
+  # Safety cap on the agentic loop so a confused model can't loop forever.
+  max-iterations: 5
+
 management:
   endpoints:
     web:

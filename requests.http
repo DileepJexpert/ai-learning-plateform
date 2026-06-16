@@ -80,6 +80,28 @@ Content-Type: application/json
   "question": "What is the capital of France?"
 }
 
+### --- Module 5: tool-calling agent ---
+### Needs a tool-capable model (qwen2.5-coder:7b). The agent calls get_customer / query_ledger.
+
+### List available tools
+GET {{host}}/api/agent/tools
+
+### Ask something that requires a customer lookup
+POST {{host}}/api/agent/ask
+Content-Type: application/json
+
+{
+  "question": "What is the outstanding balance for customer C-100, and how close is it to their credit limit?"
+}
+
+### Ask something that needs a ledger lookup
+POST {{host}}/api/agent/ask
+Content-Type: application/json
+
+{
+  "question": "What is the net balance of the 4000-SALES account?"
+}
+
 ### --- Module 2: extract from an invoice photo/scan ---
 ### Needs a vision model:  ollama pull llama3.2-vision
 ### Point the `<` at any real invoice image on disk (JPEG/PNG).
