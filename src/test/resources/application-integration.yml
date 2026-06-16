@@ -1,0 +1,14 @@
+# Test profile that targets a running Docker Compose pgvector instance
+# instead of Testcontainers. Use when Testcontainers can't reach Docker.
+#
+# Start pgvector first:  docker compose up -d
+# Then run:              ./mvnw test -Dspring.profiles.active=integration
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_learning
+    username: ailearning
+    password: ailearning
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql

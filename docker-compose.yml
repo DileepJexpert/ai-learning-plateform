@@ -1,0 +1,28 @@
+# Module 3: Postgres + pgvector for embedding storage & semantic search.
+#
+# Start:   docker compose up -d
+# Stop:    docker compose down
+# Reset:   docker compose down -v   (deletes all data)
+# Logs:    docker compose logs -f postgres
+#
+# Data persists in the named volume `pgdata` across restarts.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ai-learning-pgvector
+    environment:
+      POSTGRES_DB: ai_learning
+      POSTGRES_USER: ailearning
+      POSTGRES_PASSWORD: ailearning
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ailearning -d ai_learning"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  pgdata:

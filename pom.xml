@@ -16,12 +16,14 @@
     <version>0.1.0</version>
     <name>ai-learning-platform</name>
     <description>Applied AI for backend engineers: local LLM (Ollama) orchestration with Spring Boot.
-        Module 0 (baseline Ollama client) + Module 1 (hardened, schema-enforced invoice extraction).</description>
+        Modules 0–3: baseline Ollama client, hardened invoice extraction, vision, embeddings &amp; semantic search.</description>
 
     <properties>
         <java.version>21</java.version>
         <!-- Records + Jackson/Bean-Validation rely on parameter names being kept in the bytecode. -->
         <maven.compiler.parameters>true</maven.compiler.parameters>
+        <pgvector.version>0.1.6</pgvector.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -40,9 +42,45 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Module 3: Spring Data JDBC for pgvector. We use JDBC (not JPA) because
+             our schema is simple and we write the SQL ourselves — no ORM magic. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+        <!-- pgvector Java types: PGvector for reading/writing vector columns. -->
+        <dependency>
+            <groupId>com.pgvector</groupId>
+            <artifactId>pgvector</artifactId>
+            <version>${pgvector.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Module 3 tests: Testcontainers starts a real Postgres+pgvector in Docker,
+             so ./mvnw test works without a running database. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

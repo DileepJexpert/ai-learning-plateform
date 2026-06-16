@@ -1,0 +1,58 @@
+GST (Goods and Services Tax) Quick Reference Notes — India
+
+1. OVERVIEW
+GST is a single indirect tax on the supply of goods and services. It replaced
+multiple cascading taxes like VAT, excise, and service tax under one unified
+framework. GST was introduced on 1 July 2017 and is governed by the GST Council.
+
+2. GST RATES
+The four main GST rate slabs are: 5%, 12%, 18%, and 28%.
+- 5%: essential items — food grains, packaged food, footwear below Rs 500,
+  transport services.
+- 12%: processed food, business class air tickets, cell phones, fertilisers.
+- 18%: most services (IT, consulting, restaurant dining), capital goods, industrial
+  intermediates, electronic goods, white goods.
+- 28%: luxury goods — automobiles, tobacco, aerated drinks, cement, ACs.
+Some goods are GST-exempt (0%): fresh fruits, vegetables, milk, bread, healthcare
+services, educational services.
+
+3. GST COMPONENTS
+- CGST (Central GST): levied by the central government on intra-state supply.
+- SGST (State GST): levied by the state government on intra-state supply.
+- IGST (Integrated GST): levied on inter-state supply; equal to CGST + SGST.
+For an intra-state supply taxed at 18%, the buyer pays 9% CGST + 9% SGST.
+For an inter-state supply at 18%, the buyer pays 18% IGST.
+
+4. INPUT TAX CREDIT (ITC)
+Businesses can claim credit for GST paid on inputs against their output GST
+liability. Example: if a manufacturer pays 18% GST on raw materials and collects
+18% on finished goods, the input tax is deducted. ITC prevents cascading (tax on
+tax) and reduces the effective cost.
+
+5. GSTIN (GST Identification Number)
+Every registered taxpayer has a 15-character GSTIN:
+- First 2 digits: state code (e.g. 27 = Maharashtra, 29 = Karnataka).
+- Next 10 characters: PAN of the entity.
+- 13th character: entity number within the PAN.
+- 14th character: Z (default).
+- 15th character: check digit.
+Example: 27AABCA1234A1Z5.
+
+6. HSN AND SAC CODES
+- HSN (Harmonized System of Nomenclature): classifies goods. Example: 7318 = bolts
+  and screws; 8471 = computers; 9405 = lighting.
+- SAC (Services Accounting Code): classifies services. Example: 998311 = management
+  consulting; 997212 = air transport of passengers.
+Businesses with turnover above Rs 5 crore must report 6-digit HSN codes on invoices.
+
+7. E-INVOICING
+E-invoicing is mandatory for businesses with turnover above Rs 5 crore (as of
+August 2023). The seller generates a JSON invoice, uploads it to the Invoice
+Registration Portal (IRP), and receives a signed IRN and QR code. This ensures
+real-time validation and reduces fake invoicing.
+
+8. GST RETURNS
+- GSTR-1: outward supply details (filed monthly/quarterly).
+- GSTR-3B: summary return with tax payment (filed monthly).
+- GSTR-9: annual return consolidating the year's data.
+Late filing attracts a penalty of Rs 50/day (Rs 20 for nil returns).

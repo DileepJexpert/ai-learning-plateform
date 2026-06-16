@@ -10,8 +10,9 @@ This repo follows a module-by-module learning plan. What's built **right now**:
 | **0** | Baseline — call a local model over HTTP | ✅ built |
 | **1** | Prompt engineering & **structured output** (hardened invoice extractor) | ✅ built |
 | **2** | **Vision / multimodal extraction** (invoice photo → same schema) | ✅ built |
-| 3 | Embeddings & semantic search (pgvector) | ⏳ next |
-| 4–8 | RAG, tools/agents, eval, production, system design | 🗺️ planned |
+| **3** | **Embeddings & semantic search** (pgvector + nomic-embed-text) | ✅ built |
+| 4 | RAG (retrieval-augmented generation) | ⏳ next |
+| 5–8 | Tools/agents, eval, production, system design | 🗺️ planned |
 
 > **The headline feature:** an invoice → JSON extractor that returns **valid,
 > schema-correct JSON every time** — strict schema + few-shot + null handling +
@@ -28,9 +29,14 @@ This repo follows a module-by-module learning plan. What's built **right now**:
    ollama serve                 # starts the server on http://localhost:11434
    ollama pull qwen2.5-coder:7b # the default model used here
    ollama pull llama3.2-vision  # Module 2: reading invoice photos/scans
+   ollama pull nomic-embed-text # Module 3: embeddings & semantic search
    # optional alternates:
    ollama pull qwen2.5-coder:14b   # max quality
    ollama pull llama3.2:3b         # fast smoke tests
+   ```
+3. **Docker** (for Module 3+ — pgvector):
+   ```bash
+   docker compose up -d    # starts Postgres + pgvector on localhost:5432
    ```
    Nothing leaves your machine — that's the whole point of local inference
    (privacy / cost / control; great for regulated or air-gapped environments).
@@ -42,10 +48,13 @@ No Maven install needed — use the bundled wrapper (`./mvnw`).
 ## Quick start
 
 ```bash
-# 1. run the tests (these DON'T need Ollama — the model is mocked)
+# 1. start pgvector (needed for Module 3+ tests and the app itself)
+docker compose up -d
+
+# 2. run the tests (Ollama is mocked; pgvector runs in Docker)
 ./mvnw test
 
-# 2. start the service (this DOES need Ollama running)
+# 3. start the service (needs both Ollama and pgvector running)
 ./mvnw spring-boot:run
 ```
 
@@ -68,6 +77,16 @@ curl -s localhost:8080/api/invoices/extract \
 
 # Module 2 — extract from a photo/scan (needs: ollama pull llama3.2-vision)
 curl -s -F file=@/path/to/invoice.jpg localhost:8080/api/invoices/extract-image | jq
+
+# Module 3 — ingest a document for semantic search (needs: nomic-embed-text + pgvector)
+curl -s localhost:8080/api/embeddings/ingest \
+  -H 'Content-Type: application/json' \
+  -d '{"docName":"gst-notes","text":"GST rates: 5% essentials, 12% processed food, 18% services and electronics, 28% luxury goods."}' | jq
+
+# Module 3 — semantic search across all ingested documents
+curl -s localhost:8080/api/embeddings/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"What is the GST rate for electronic goods?","k":3}' | jq
 ```
 
 `requests.http` has the same calls for the IntelliJ/VS Code REST client.
@@ -155,20 +174,26 @@ src/main/java/com/dileep/ailearning/
 ├─ AiLearningApplication.java        # entry point
 ├─ config/                           # typed config (OllamaProperties, ...) + RestClient bean
 ├─ ollama/                           # MODULE 0: the only code that talks to Ollama
-│  ├─ OllamaClient.java              #   thin wrapper over POST /api/chat (logs token usage)
-│  └─ dto/                           #   the wire format (ChatRequest/Response, Message, Options)
+│  ├─ OllamaClient.java              #   chat() + embed() — logs token usage
+│  └─ dto/                           #   wire format (ChatRequest/Response, EmbedRequest/Response, ...)
 ├─ chat/ChatController.java          # MODULE 0: POST /api/chat demo endpoint
 ├─ invoice/                          # MODULE 1 & 2: structured extraction
 │  ├─ InvoicePromptFactory.java      #   the schema + few-shot contract  ← the "feature"
 │  ├─ InvoiceExtractionService.java  #   extract(text) + extractFromImage(bytes), shared retry loop
 │  ├─ InvoiceController.java         #   POST /api/invoices/extract[-sample] (text) + /extract-image (photo)
 │  └─ model/{Invoice,LineItem}.java  #   target schema + validation guardrails
+├─ embedding/                        # MODULE 3: embeddings & vector storage
+│  ├─ TextChunker.java               #   split documents into overlapping chunks
+│  ├─ EmbeddingService.java          #   chunk → embed (via Ollama) → store in pgvector
+│  ├─ ChunkRepository.java           #   pgvector SQL: insert + cosine-similarity search
+│  └─ DocumentChunk.java             #   stored chunk record
+├─ search/SemanticSearchController   # MODULE 3: POST /api/embeddings/{ingest,search}
 └─ common/                           # JsonSanitizer, GlobalExceptionHandler (RFC-7807)
 ```
 
 `docs/` has a one-page concept note per module ([Module 0](docs/module-0-baseline.md),
-[Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md)) —
-written as interview prep.
+[Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md),
+[Module 3](docs/module-3-embeddings.md)) — written as interview prep.
 
 ---
 
@@ -185,6 +210,10 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
 | `invoice.extraction.temperature` | `0.0` | 0 = deterministic; never raise for extraction |
 | `invoice.extraction.seed` | `42` | fixed seed → reproducible runs |
 | `invoice.extraction.max-retries` | `1` | "auto-retry once" |
+| `embedding.model` | `nomic-embed-text` | embedding model (Module 3) |
+| `embedding.dimensions` | `768` | must match the model's output dimension |
+| `embedding.chunk-size` | `500` | target chunk size in characters |
+| `embedding.chunk-overlap` | `100` | overlap between consecutive chunks |
 
 ```bash
 # e.g. use the bigger model just for extraction:
@@ -201,14 +230,18 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
   persistence, returning RFC-7807 problem responses."*
 - *"Extended it to multimodal input — base64 image → vision model — reusing the
   same schema-validated domain object and retry pipeline as the text path."*
+- *"Implemented semantic search over internal docs using local embeddings
+  (nomic-embed-text) stored in pgvector with HNSW indexing and cosine-similarity
+  retrieval."*
 
 See the per-module docs for the concepts and the questions they answer.
 
 ---
 
-## Next up — Module 3 (Embeddings & semantic search)
+## Next up — Module 4 (RAG)
 
-`ollama pull nomic-embed-text`, embed chunks of your own docs (BRD/FRD, GST
-notes), store the vectors in **pgvector**, and implement cosine-similarity
-search — the foundation for Module 4 (RAG). This is the first module that adds a
-datastore (Postgres + the `pgvector` extension) alongside Ollama.
+The most-asked applied-AI interview topic. Build the full pipeline:
+retrieve relevant chunks from pgvector (Module 3), stuff them into a prompt
+as grounding context, and have the chat model answer **with citations**.
+Everything needed (embedding + storage + search + chat model) is already
+wired — Module 4 ties them together.

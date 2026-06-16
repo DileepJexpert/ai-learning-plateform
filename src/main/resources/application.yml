@@ -6,6 +6,18 @@ spring:
       # Module 2: invoice photos from phones can be several MB. Give uploads headroom.
       max-file-size: 15MB
       max-request-size: 20MB
+  # ---------------------------------------------------------------------------
+  # Module 3 — Postgres + pgvector for embedding storage & semantic search.
+  # Start Postgres:  docker compose up -d
+  # ---------------------------------------------------------------------------
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_learning
+    username: ailearning
+    password: ailearning
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
 
 server:
   port: 8080
@@ -44,6 +56,20 @@ invoice:
     num-ctx: 8192
     # "auto-retry once": 1 retry => up to 2 attempts total.
     max-retries: 1
+
+# ---------------------------------------------------------------------------
+# Module 3 — embeddings & semantic search.
+# ---------------------------------------------------------------------------
+embedding:
+  # Embedding model. Pull it first:  ollama pull nomic-embed-text
+  model: nomic-embed-text
+  # nomic-embed-text outputs 768-dimensional vectors. Must match schema.sql.
+  dimensions: 768
+  # Chunking params: how to split documents before embedding.
+  # Smaller chunks = more precise retrieval; larger = more context per hit.
+  chunk-size: 500
+  # Overlap keeps context at chunk boundaries.
+  chunk-overlap: 100
 
 management:
   endpoints:

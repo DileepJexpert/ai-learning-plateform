@@ -42,6 +42,27 @@ Content-Type: application/json
   "text": "Invoice No: INV-77\nFrom: Foo Ltd  GSTIN: 27AABCF1111A1Z5\nWidget Pro  HSN 8471  Qty 2  Rate 1500.00  Amount 3000.00\nGST 18% 540.00\nTotal 3540.00\nCurrency INR"
 }
 
+### --- Module 3: embeddings & semantic search ---
+### Needs: docker compose up -d (pgvector)  +  ollama pull nomic-embed-text
+
+### Ingest a document (chunk + embed + store in pgvector)
+POST {{host}}/api/embeddings/ingest
+Content-Type: application/json
+
+{
+  "docName": "gst-notes",
+  "text": "GST is a single indirect tax on the supply of goods and services. It replaced multiple cascading taxes like VAT, excise, and service tax. The four main GST rate slabs are: 5%, 12%, 18%, and 28%. The 18% slab covers most services including IT, consulting, electronic goods, and white goods. Input Tax Credit (ITC) allows businesses to claim credit for GST paid on inputs against their output liability, preventing cascading taxation."
+}
+
+### Semantic search across ingested documents
+POST {{host}}/api/embeddings/search
+Content-Type: application/json
+
+{
+  "query": "What is the GST rate for electronic goods?",
+  "k": 3
+}
+
 ### --- Module 2: extract from an invoice photo/scan ---
 ### Needs a vision model:  ollama pull llama3.2-vision
 ### Point the `<` at any real invoice image on disk (JPEG/PNG).

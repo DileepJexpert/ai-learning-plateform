@@ -3,6 +3,8 @@ package com.dileep.ailearning.ollama;
 import com.dileep.ailearning.config.OllamaProperties;
 import com.dileep.ailearning.ollama.dto.ChatRequest;
 import com.dileep.ailearning.ollama.dto.ChatResponse;
+import com.dileep.ailearning.ollama.dto.EmbedRequest;
+import com.dileep.ailearning.ollama.dto.EmbedResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -16,11 +18,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Module 0 — the one place that knows how to talk to Ollama.
+ * The one place that knows how to talk to Ollama.
  *
- * <p>A thin, typed wrapper around {@code POST /api/chat}. Everything else in the
- * project goes through here, which means cross-cutting concerns (logging token
- * usage, translating transport errors) live in exactly one spot.
+ * <p>A thin, typed wrapper around {@code POST /api/chat} (Module 0) and
+ * {@code POST /api/embed} (Module 3). Everything else in the project goes
+ * through here, which means cross-cutting concerns (logging, translating
+ * transport errors) live in exactly one spot.
  */
 @Component
 public class OllamaClient {
@@ -62,6 +65,38 @@ public class OllamaClient {
             throw new OllamaException(
                     "Could not reach Ollama at " + baseUrl
                             + " — is it running? Start it with `ollama serve`. Cause: " + e.getMessage(),
+                    e);
+        }
+    }
+
+    /**
+     * Module 3 — compute an embedding vector for a piece of text.
+     *
+     * @throws OllamaException if Ollama is unreachable or returns a non-2xx status
+     */
+    public EmbedResponse embed(EmbedRequest request) {
+        long startNanos = System.nanoTime();
+        try {
+            EmbedResponse response = restClient.post()
+                    .uri("/api/embed")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        String body = readBody(res.getBody());
+                        throw new OllamaException(
+                                "Ollama returned " + res.getStatusCode() + " for /api/embed: " + body);
+                    })
+                    .body(EmbedResponse.class);
+
+            long wallMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+            log.info("ollama embed: model={} dims={} wallMs={}",
+                    request.model(), response.embedding().length, wallMs);
+            return response;
+        } catch (ResourceAccessException e) {
+            throw new OllamaException(
+                    "Could not reach Ollama at " + baseUrl
+                            + " — is it running? Cause: " + e.getMessage(),
                     e);
         }
     }
