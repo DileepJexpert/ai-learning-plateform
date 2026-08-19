@@ -301,3 +301,33 @@ Add the things that make an LLM feature production-grade: streaming responses
 (SSE), response caching (exact + semantic), timeouts, a fallback path, and
 per-request token/latency logging. This is where a Kafka/SRE/reliability
 background outclasses pure-ML candidates.
+
+cat << 'EOF' > README.md
+## Phase 1: The Atomic Layer (Data Translation)
+Before building systems, you must map how AI processes data compared to traditional relational databases.
+
+*   **1.1 Tokenization vs. Serialization:** How text is converted into integers. Why LLMs struggle with precise spelling and math, and how token chunking differs from standard JSON payload serialization.
+*   **1.2 Embeddings as High-Dimensional State:** Moving from exact-match `WHERE` clauses in PostgreSQL to semantic proximity. How embedding models map concepts into mathematical vectors.
+*   **1.3 The Context Window Constraint:** Understanding the LLM's working memory as a strict, stateless session cache. Why you must send the entire conversational state in every HTTP request.
+
+## Phase 2: The Processing Engine (The Transformer)
+Demystifying the neural network without looking at Python scripts. Understanding the computation taking place during a request.
+
+*   **2.1 The Self-Attention Mechanism:** A conceptual deep dive into how "Queries, Keys, and Values" route context between words.
+*   **2.2 Multi-Layer Perceptrons (MLPs):** How the network stores its learned "memory".
+*   **2.3 Next Token Prediction:** Visualizing the final output layer as a massive probability distribution.
+
+## Phase 3: The Enterprise Data Pipeline (RAG)
+How to inject proprietary corporate data into the LLM safely using event-driven architectures.
+
+*   **3.1 Asynchronous Ingestion:** Designing a pipeline where document uploads trigger Kafka events.
+*   **3.2 Hybrid Search Mechanics:** Combining traditional SQL metadata filtering with cosine similarity searches.
+*   **3.3 Safe Orchestration:** Why the LLM must be treated as an untrusted rendering engine.
+
+## Phase 4: Production Operations & SLAs
+Shifting from theory to deployment. How AI inference impacts infrastructure routing and metrics.
+
+*   **4.1 Inference Compute vs. Training:** Serving an AI model vs standard Java microservice on AWS EKS.
+*   **4.2 The Latency Decoupling (TTFT vs. TPOT):** Why average latency is a useless metric for AI.
+*   **4.3 Gateway Management:** Routing AI traffic through Kong Gateway to manage rate limiting.
+    EOF
