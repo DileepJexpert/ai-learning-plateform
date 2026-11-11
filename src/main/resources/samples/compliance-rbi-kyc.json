@@ -1,0 +1,28 @@
+{
+  "circularId": "RBI/2024-25/112",
+  "circularTitle": "Master Direction - Know Your Customer (KYC) Direction, 2016 (Updated 2024)",
+  "authority": "Reserve Bank of India",
+  "effectiveDate": "2024-04-01",
+  "clauses": [
+    {
+      "clauseRef": "Section 4.1(a)",
+      "sectionTitle": "Customer Due Diligence (CDD) Requirements",
+      "content": "Regulated Entities (REs) shall undertake Customer Due Diligence (CDD) before opening any account or entering into a contractual relationship with a customer. For individual customers, REs shall obtain Officially Valid Documents (OVDs) including Passport, Driving Licence, Proof of possession of Aadhaar number, or Voter's Identity Card."
+    },
+    {
+      "clauseRef": "Section 4.2(a)",
+      "sectionTitle": "Periodic Updation of KYC Records",
+      "content": "Periodic updation of KYC documents shall be carried out at least once in every two years for high risk customers, once in every eight years for medium risk customers and once in every ten years for low risk customers from the date of opening of the account or last KYC updation."
+    },
+    {
+      "clauseRef": "Section 4.2(b)",
+      "sectionTitle": "No-Change Self-Declaration Facility",
+      "content": "In case of no change in KYC information of low and medium risk customers, a self-declaration from the customer to that effect shall be obtained through registered email-id, registered mobile number, ATMs, digital channels or physical letter, without requiring personal visit to branch."
+    },
+    {
+      "clauseRef": "Section 5.3(c)",
+      "sectionTitle": "Politically Exposed Persons (PEPs)",
+      "content": "Decision to open an account for Politically Exposed Persons (PEPs) shall be taken at a senior management level (not below the rank of AGM or equivalent). The source of funds must be verified and accounts shall be subjected to continuous enhanced monitoring and classified as high risk."
+    }
+  ]
+}

@@ -15,7 +15,8 @@ This repo follows a module-by-module learning plan. What's built **right now**:
 | **5** | **Tool calling / agents** (ReAct loop, validation + retry) | ✅ built |
 | **6** | **Evaluation & guardrails** (eval set, LLM-judge, injection/PII) | ✅ built |
 | **7** | **Production concerns** (SSE streaming, virtual threads, exact & semantic caching, fallbacks, TTFT/TPOT metrics) | ✅ built |
-| 8 | Architecture & system design (Portfolio Blueprints 1 & 2) | 🗺️ planned |
+| **BP-1** | **Compliance & Regulatory Engine** (hybrid BM25/vector search, RRF, clause citations, 3 ADRs) | ✅ built |
+| **BP-2** | Event-Driven Agentic Loan Underwriting System (Kafka, state machines, Transactional Outbox, HITL) | 🗺️ planned |
 
 > **The headline feature:** an invoice → JSON extractor that returns **valid,
 > schema-correct JSON every time** — strict schema + few-shot + null handling +
@@ -116,6 +117,19 @@ curl -N localhost:8080/api/production/chat/stream?prompt=Explain+optimistic+lock
 
 # Module 7 — FinOps & LLMOps observability (TTFT, TPOT, cache hit ratios, tokens saved)
 curl -s localhost:8080/api/production/metrics | jq
+
+# Blueprint 1 — Load bundled banking compliance circulars (RBI KYC & Basel III LCR)
+curl -s -X POST localhost:8080/api/compliance/load-samples | jq
+
+# Blueprint 1 — Hybrid Search (dense vector + sparse BM25 fused with RRF)
+curl -s localhost:8080/api/compliance/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"What are the KYC refresh intervals for high risk vs low risk customers?","topK":3}' | jq
+
+# Blueprint 1 — Audited regulatory Q&A with clause citations and confidence
+curl -s localhost:8080/api/compliance/audit-query \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"Under RBI regulations, what is the mandatory periodic KYC update interval for high risk customers?"}' | jq
 ```
 
 `requests.http` has the same calls for the IntelliJ/VS Code REST client.
@@ -245,14 +259,24 @@ src/main/java/com/dileep/ailearning/
 │  ├─ resilience/FallbackRouter.java #   automatic failover routing on primary model timeout/failure
 │  ├─ metrics/ProductionMetrics.java #   TTFT, TPOT, token savings & cache hit ratio accounting
 │  └─ ProductionChatController.java  #   POST /api/production/chat, GET/POST /chat/stream, /metrics
+├─ compliance/                       # BLUEPRINT 1: Regulatory Document Engine
+│  ├─ repository/                    #   hybrid search: pgvector cosine distance + tsvector BM25 rank
+│  ├─ search/ReciprocalRankFusion    #   RRF rank aggregation algorithm (no score normalization needed)
+│  ├─ prompt/CompliancePromptFactory #   strict auditor contract with few-shot JSON attribution
+│  ├─ service/ComplianceService.java #   PII scrubbing + hybrid retrieval + audited synthesis
+│  └─ ComplianceController.java      #   POST /api/compliance/{ingest,search,audit-query,load-samples}
 └─ common/                           # JsonSanitizer, GlobalExceptionHandler (RFC-7807)
 ```
 
-`docs/` has a concept note per module ([Module 0](docs/module-0-baseline.md),
+`docs/` has concept notes per module ([Module 0](docs/module-0-baseline.md),
 [Module 1](docs/module-1-structured-output.md), [Module 2](docs/module-2-vision.md),
 [Module 3](docs/module-3-embeddings.md), [Module 4](docs/module-4-rag.md),
 [Module 5](docs/module-5-tools.md), [Module 6](docs/module-6-eval-guardrails.md),
-[Module 7](docs/module-7-production-concerns.md)) plus the
+[Module 7](docs/module-7-production-concerns.md)), the
+[Blueprint 1 Architecture Guide](docs/blueprint-1-compliance-regulatory-engine.md) (with Mermaid diagrams),
+3 ADRs ([ADR-001](docs/adr/ADR-001-pgvector-vs-dedicated-vector-db.md),
+[ADR-002](docs/adr/ADR-002-hybrid-search-rrf-vs-dense-only.md),
+[ADR-003](docs/adr/ADR-003-clause-level-citation-auditor-traceability.md)), and the
 [Career Transition Tracker](docs/career-transition-tracker.md) — written as interview prep.
 
 ---
@@ -319,6 +343,9 @@ All in [`application.yml`](src/main/resources/application.yml); override via env
   cosine similarity) cutting redundant LLM compute by 40% and dropping P95 latency from 3,500ms to 20ms."*
 - *"Engineered an automated model fallback router with circuit-breaker failover to secondary SLMs
   and integrated LLMOps observability tracking TTFT, TPOT, and token drift."*
+- *"Architected a regulatory compliance search engine (Blueprint 1) with hybrid retrieval fusing
+  PostgreSQL Full-Text Search (BM25) and pgvector cosine similarity via Reciprocal Rank Fusion (RRF),
+  inline banking PII masking, and clause-level citation attribution meeting Model Risk Management (SR 11-7) standards."*
 
 See the per-module docs for the concepts and the questions they answer.
 
@@ -336,8 +363,21 @@ See [`docs/module-7-production-concerns.md`](docs/module-7-production-concerns.m
 
 ---
 
-## Next up — Module 8 (Enterprise Portfolio Blueprints & System Design)
+## Portfolio Blueprint 1: Compliance & Regulatory Document Engine
 
-Building the two capstone portfolio systems defined in the [Career Transition Tracker](docs/career-transition-tracker.md):
-1. **Blueprint 1: Compliance & Regulatory Document Search Engine** (Spring AI / Java 21 + PostgreSQL `pgvector` + Redis Cache + Cross-Encoder Reranker + Citation Metadata).
-2. **Blueprint 2: Resilient Event-Driven Agentic Loan Underwriting System** (Kafka + Spring Boot + LangGraph / Spring State Machine + Transactional Outbox + Human-in-the-Loop approval gates).
+A production-grade regulatory examination system that ingests banking circulars (RBI Master Directions, Basel III, OCC guidelines) and delivers audited, citation-backed answers:
+- **Zero-Egress Security & Inline PII Scrubbing:** Sanitizes PAN, Aadhaar, GSTIN, card numbers, and emails prior to embedding generation.
+- **Hybrid Retrieval & Reciprocal Rank Fusion (RRF):** Merges dense vector semantic search (`pgvector` HNSW) with sparse keyword search (`tsvector` BM25 rank) without fragile score normalization.
+- **Auditor Attribution Contract:** Output schema requires granular factual statements mapped to exact `circularId` and `clauseRef` pointers, refusing to hallucinate when context is insufficient.
+- **Architecture Documentation & ADRs:** Includes full Mermaid architecture & sequence diagrams, plus 3 Architecture Decision Records ([ADR-001](docs/adr/ADR-001-pgvector-vs-dedicated-vector-db.md), [ADR-002](docs/adr/ADR-002-hybrid-search-rrf-vs-dense-only.md), [ADR-003](docs/adr/ADR-003-clause-level-citation-auditor-traceability.md)).
+
+See [`docs/blueprint-1-compliance-regulatory-engine.md`](docs/blueprint-1-compliance-regulatory-engine.md).
+
+---
+
+## Next up — Portfolio Blueprint 2 (Resilient Event-Driven Agentic Loan Underwriting System)
+
+The second capstone portfolio system defined in the [Career Transition Tracker](docs/career-transition-tracker.md):
+- **Kafka + Spring Boot:** Asynchronous event ingestion using the Transactional Outbox pattern.
+- **Multi-Agent Orchestration:** Specialized agents for financial statement analysis, credit bureau retrieval, and risk narrative generation.
+- **Human-in-the-Loop (HITL) Gate:** Deterministic state machine enforcement when loan risk confidence < 95% or requested loan > $250k.

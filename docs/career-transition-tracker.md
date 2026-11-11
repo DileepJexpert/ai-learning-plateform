@@ -50,7 +50,7 @@ Do not attempt to compete as an entry-level Python prompt hacker or model traine
   * **Stateful & Resilient Agent Workflows:** Transactional Outbox pattern with tool execution; deterministic state machines (LangGraph / Spring State Machine) to eliminate agent loops.
   * **Gateway & FinOps:** Semantic caching (Redis / pgvector), rate-limiting, and cost/latency tiering (routing between small local SLMs and cloud frontier LLMs).
 
-- [-] **Task 2.1:** Implement hybrid search (BM25 + vector embeddings + MMR / cross-encoder reranker) against financial reports. *(Implemented: Module 3 pgvector + Module 4 MMR re-ranking)*
+- [x] **Task 2.1:** Implement hybrid search (BM25 full-text + vector embeddings + Reciprocal Rank Fusion) against financial & regulatory circulars. *(Implemented: Blueprint 1 Compliance Engine)*
 - [-] **Task 2.2:** Build a tool-calling workflow with deterministic approval gates and idempotency keys to prevent duplicate transactions. *(Implemented: Module 5 ReAct tool agent with schema validation and self-correction)*
 - [x] **Task 2.3:** Implement a token-budgeting and semantic caching layer with pgvector/Redis to curb API costs. *(Implemented: Module 4 context budgeting + Module 7 exact & semantic caching)*
 
@@ -75,7 +75,7 @@ Do not attempt to compete as an entry-level Python prompt hacker or model traine
   * Enterprise AI System Design interview frameworks.
   * Deep trade-off analysis: On-prem vs. Managed API, Fine-Tuning vs. RAG, SLM vs. Frontier LLM.
 
-- [ ] **Task 4.1:** Complete Portfolio Project 1 (Regulatory Circular Compliance & Audit Search Engine).
+- [x] **Task 4.1:** Complete Portfolio Project 1 (Regulatory Circular Compliance & Audit Search Engine). *(Implemented: Blueprint 1 with hybrid RRF, clause citation attribution, and 3 ADRs)*
 - [ ] **Task 4.2:** Complete Portfolio Project 2 (Resilient Multi-Agent Commercial Loan / Fraud Triage System).
 - [ ] **Task 4.3:** Rebrand LinkedIn and Resume to emphasize Enterprise AI Architecture and Java AI bridges.
 
@@ -116,8 +116,7 @@ Update your progress as you work through each area: `[ ]` Not Started | `[-]` In
 
 ### B. Retrieval-Augmented Generation (RAG) Architecture
 - [x] Advanced chunking (Recursive character, chunk overlap, boundary preservation) *(Module 3 TextChunker)*
-- [x] Dense vector embeddings vs. Sparse representations (BM25, nomic-embed-text) *(Module 3)*
-- [-] Hybrid search with Reciprocal Rank Fusion / MMR *(Module 4 MMR re-ranking)*
+- [x] Hybrid search with Reciprocal Rank Fusion (RRF) *(Blueprint 1 Compliance Engine)*
 - [ ] Cross-encoder reranking (Cohere Rerank, BGE-Reranker)
 - [x] Vector databases in production: `pgvector` with HNSW indexing *(Module 3 & 4)*
 - [x] Context window optimization & summarization compression *(Module 4 context budgeting)*

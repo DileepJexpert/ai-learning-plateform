@@ -199,3 +199,51 @@ GET {{host}}/api/production/cache/stats
 ### 7. Clear Cache Tiers
 DELETE {{host}}/api/production/cache
 
+### ===========================================================================
+### Portfolio Blueprint 1: Compliance & Regulatory Document Engine
+### ===========================================================================
+
+### 1. Load bundled banking compliance circulars (RBI KYC Direction & Basel III LCR)
+POST {{host}}/api/compliance/load-samples
+
+### 2. Inspect total indexed regulatory clauses
+GET {{host}}/api/compliance/count
+
+### 3. Hybrid Search: Dense Vector + Sparse BM25 fused with Reciprocal Rank Fusion (RRF)
+POST {{host}}/api/compliance/search
+Content-Type: application/json
+
+{
+  "query": "What are the KYC refresh intervals for high risk vs low risk customers?",
+  "topK": 3
+}
+
+### 4. Search with exact circular number filter (demonstrates sparse BM25 strength)
+POST {{host}}/api/compliance/search
+Content-Type: application/json
+
+{
+  "query": "HQLA Level 2 haircut",
+  "circularIdFilter": "BCBS/2023/LCR",
+  "topK": 3
+}
+
+### 5. Audited Regulatory Query: Structured findings with clause-level citations & confidence
+POST {{host}}/api/compliance/audit-query
+Content-Type: application/json
+
+{
+  "query": "Under RBI regulations, what is the mandatory periodic KYC update interval for high risk customers, and how can low risk customers submit no-change declarations?",
+  "topK": 4
+}
+
+### 6. Basel III LCR Inquiry: Audited finding with source attribution
+POST {{host}}/api/compliance/audit-query
+Content-Type: application/json
+
+{
+  "query": "What are the haircut rules and maximum cap for Level 2 assets in the HQLA buffer?",
+  "topK": 4
+}
+
+

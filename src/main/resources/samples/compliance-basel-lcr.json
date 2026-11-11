@@ -1,0 +1,28 @@
+{
+  "circularId": "BCBS/2023/LCR",
+  "circularTitle": "Basel III: The Liquidity Coverage Ratio and liquidity risk monitoring tools",
+  "authority": "Basel Committee on Banking Supervision (BCBS)",
+  "effectiveDate": "2023-01-01",
+  "clauses": [
+    {
+      "clauseRef": "Section 2.1",
+      "sectionTitle": "Definition of High Quality Liquid Assets (HQLA)",
+      "content": "High Quality Liquid Assets (HQLA) comprise assets that can be easily and immediately converted into cash at little or no loss of value in private markets during a period of liquidity stress. Level 1 assets include central bank reserves and zero-risk-weighted sovereign marketable securities, subject to a 0% haircut and no cap in the HQLA buffer."
+    },
+    {
+      "clauseRef": "Section 2.2",
+      "sectionTitle": "Level 2 Asset Haircuts and Cap",
+      "content": "Level 2 assets may be included in the HQLA stock subject to a minimum 15% haircut for Level 2A assets (such as 20% risk-weighted sovereign debt and high-grade corporate bonds) and a 50% haircut for Level 2B assets. Level 2 assets must not comprise more than 40% of the overall HQLA stock."
+    },
+    {
+      "clauseRef": "Section 3.1",
+      "sectionTitle": "Minimum LCR Requirement",
+      "content": "Banks must maintain a Liquidity Coverage Ratio (LCR) of at least 100% on an ongoing basis. The LCR is calculated as the ratio of the stock of unencumbered HQLA to total net cash outflows over a 30-day severe stress scenario."
+    },
+    {
+      "clauseRef": "Section 3.4",
+      "sectionTitle": "Operational Requirements for Liquid Asset Buffer",
+      "content": "All assets in the HQLA buffer must be managed by the bank's liquidity management function (e.g. corporate treasury) with no legal, regulatory, or operational impediments to liquidation or pledging within the 30-day stress horizon."
+    }
+  ]
+}
