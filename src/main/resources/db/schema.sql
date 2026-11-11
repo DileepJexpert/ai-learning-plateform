@@ -20,3 +20,21 @@ CREATE TABLE IF NOT EXISTS document_chunks (
 CREATE INDEX IF NOT EXISTS idx_chunks_embedding_cosine
     ON document_chunks
     USING hnsw (embedding vector_cosine_ops);
+
+-- Module 7: pgvector schema for semantic response caching.
+-- Reduces latency and token consumption for semantically similar user prompts.
+CREATE TABLE IF NOT EXISTS semantic_cache (
+    id              BIGSERIAL PRIMARY KEY,
+    query_text      TEXT NOT NULL,
+    response_text   TEXT NOT NULL,
+    model           TEXT NOT NULL,
+    embedding       VECTOR(768),         -- 768 dimensions for nomic-embed-text
+    prompt_tokens   INT,
+    response_tokens INT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_semantic_cache_embedding_cosine
+    ON semantic_cache
+    USING hnsw (embedding vector_cosine_ops);
+

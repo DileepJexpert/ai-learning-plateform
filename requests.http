@@ -158,3 +158,44 @@ Content-Type: image/jpeg
 
 < ./invoice.jpg
 --WebAppBoundary--
+
+### ===========================================================================
+### Module 7 — Production Concerns: Caching, Streaming, Fallback, Metrics
+### ===========================================================================
+
+### 1. Cached Chat: First call triggers model inference and populates cache
+POST {{host}}/api/production/chat
+Content-Type: application/json
+
+{
+  "prompt": "Explain the difference between optimistic and pessimistic locking in banking transactions in two sentences."
+}
+
+### 2. Exact Cache Hit: Sub-millisecond response using Tier-1 SHA-256 hash
+POST {{host}}/api/production/chat
+Content-Type: application/json
+
+{
+  "prompt": "Explain the difference between optimistic and pessimistic locking in banking transactions in two sentences."
+}
+
+### 3. Semantic Cache Hit: Rephrased prompt matched via pgvector cosine similarity (>= 0.90)
+POST {{host}}/api/production/chat
+Content-Type: application/json
+
+{
+  "prompt": "What is the difference between optimistic locking and pessimistic locking in banking transactions in 2 sentences?"
+}
+
+### 4. Real-time SSE Token Streaming (Java 21 Virtual Threads)
+GET {{host}}/api/production/chat/stream?prompt=Briefly+list+three+benefits+of+virtual+threads+in+Java+21.
+
+### 5. Production Observability: Inspect token accounting, TTFT, TPOT, and cache hit ratios
+GET {{host}}/api/production/metrics
+
+### 6. Inspect Cache Statistics
+GET {{host}}/api/production/cache/stats
+
+### 7. Clear Cache Tiers
+DELETE {{host}}/api/production/cache
+

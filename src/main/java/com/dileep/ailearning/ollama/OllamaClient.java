@@ -5,6 +5,7 @@ import com.dileep.ailearning.ollama.dto.ChatRequest;
 import com.dileep.ailearning.ollama.dto.ChatResponse;
 import com.dileep.ailearning.ollama.dto.EmbedRequest;
 import com.dileep.ailearning.ollama.dto.EmbedResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
@@ -13,17 +14,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * The one place that knows how to talk to Ollama.
  *
- * <p>A thin, typed wrapper around {@code POST /api/chat} (Module 0) and
+ * <p>A thin, typed wrapper around {@code POST /api/chat} (Module 0, 7) and
  * {@code POST /api/embed} (Module 3). Everything else in the project goes
  * through here, which means cross-cutting concerns (logging, translating
- * transport errors) live in exactly one spot.
+ * transport errors, streaming) live in exactly one spot.
  */
 @Component
 public class OllamaClient {
@@ -32,10 +36,16 @@ public class OllamaClient {
 
     private final RestClient restClient;
     private final String baseUrl;
+    private final ObjectMapper objectMapper;
 
     public OllamaClient(RestClient ollamaRestClient, OllamaProperties properties) {
+        this(ollamaRestClient, properties, new ObjectMapper());
+    }
+
+    public OllamaClient(RestClient ollamaRestClient, OllamaProperties properties, ObjectMapper objectMapper) {
         this.restClient = ollamaRestClient;
         this.baseUrl = properties.baseUrl();
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
     }
 
     /**
@@ -97,6 +107,48 @@ public class OllamaClient {
             throw new OllamaException(
                     "Could not reach Ollama at " + baseUrl
                             + " — is it running? Cause: " + e.getMessage(),
+                    e);
+        }
+    /**
+     * Module 7 — stream chat tokens from Ollama over HTTP as newline-delimited JSON (NDJSON).
+     *
+     * <p>Invokes {@code chunkConsumer} on each emitted token chunk. The final chunk
+     * will have {@code done == true} with prompt and response token counts.
+     */
+    public void streamChat(ChatRequest request, Consumer<ChatResponse> chunkConsumer) {
+        long startNanos = System.nanoTime();
+        try {
+            restClient.post()
+                    .uri("/api/chat")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .exchange((req, res) -> {
+                        if (res.getStatusCode().isError()) {
+                            String body = readBody(res.getBody());
+                            throw new OllamaException(
+                                    "Ollama returned " + res.getStatusCode() + " for /api/chat (streaming): " + body);
+                        }
+                        try (var reader = new BufferedReader(new InputStreamReader(res.getBody(), StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.isBlank()) {
+                                    continue;
+                                }
+                                ChatResponse chunk = objectMapper.readValue(line, ChatResponse.class);
+                                chunkConsumer.accept(chunk);
+                            }
+                        } catch (IOException e) {
+                            throw new OllamaException("Error reading streaming response from Ollama: " + e.getMessage(), e);
+                        }
+                        return null;
+                    });
+
+            long wallMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+            log.info("ollama streamChat complete: model={} wallMs={}", request.model(), wallMs);
+        } catch (ResourceAccessException e) {
+            throw new OllamaException(
+                    "Could not reach Ollama at " + baseUrl
+                            + " for streaming — is it running? Cause: " + e.getMessage(),
                     e);
         }
     }

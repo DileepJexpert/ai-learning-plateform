@@ -41,4 +41,9 @@ public record ChatRequest(
                                         List<ToolDefinition> tools) {
         return new ChatRequest(model, messages, false, null, options, tools);
     }
+
+    /** Streaming chat — Module 7 SSE token streaming. */
+    public static ChatRequest streaming(String model, List<Message> messages, Options options) {
+        return new ChatRequest(model, messages, true, null, options, null);
+    }
 }

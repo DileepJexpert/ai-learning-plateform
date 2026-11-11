@@ -1,6 +1,10 @@
 spring:
   application:
     name: ai-learning-platform
+  threads:
+    virtual:
+      # Java 21 Project Loom: enables non-blocking request handling & SSE streaming
+      enabled: true
   servlet:
     multipart:
       # Module 2: invoice photos from phones can be several MB. Give uploads headroom.
@@ -105,6 +109,19 @@ agent:
   num-ctx: 8192
   # Safety cap on the agentic loop so a confused model can't loop forever.
   max-iterations: 5
+
+# ---------------------------------------------------------------------------
+# Module 7 — production concerns (streaming, caching, fallbacks, metrics).
+# ---------------------------------------------------------------------------
+production:
+  # Two-tier caching (Tier 1: exact SHA-256 hash, Tier 2: pgvector cosine similarity)
+  cache-enabled: true
+  similarity-threshold: 0.90
+  # Dynamic fallback routing when primary model degrades or fails
+  fallback-enabled: true
+  fallback-model: llama3.2:3b
+  # SSE streaming timeout
+  streaming-timeout: 60s
 
 management:
   endpoints:
